@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pankaj Trade</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#12151A;
+    --surface:#1B1F26;
+    --surface-2:#20252D;
+    --border:#2A2F38;
+    --text:#ECEEF1;
+    --muted:#8890A0;
+    --amber:#E3A83B;
+    --amber-dim:#3A311E;
+    --green:#4FAE7C;
+    --green-dim:#1D2E27;
+    --red:#E0654F;
+    --red-dim:#332019;
+    --locked:#555C68;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+
+  .wrap{ max-width:480px; margin:0 auto; padding:20px 16px 40px; }
+
+  header.app{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:8px 2px 24px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:24px;
+  }
+  header.app .mark{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700; font-size:19px; letter-spacing:-0.02em;
+  }
+  header.app .mark span{ color:var(--amber); }
+  header.app .reset-btn{
+    background:none; border:none; color:var(--muted);
+    font-family:'Inter',sans-serif; font-size:12px; text-decoration:underline;
+    text-underline-offset:3px; cursor:pointer; padding:6px;
+  }
+
+  /* ---------- Setup screen ---------- */
+  .setup h1{
+    font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600;
+    margin-bottom:6px; letter-spacing:-0.01em;
+  }
+  .setup p.sub{ color:var(--muted); font-size:14px; margin-bottom:28px; line-height:1.5; }
+
+  .field{ margin-bottom:18px; }
+  .field label{
+    display:block; font-size:12px; color:var(--muted); margin-bottom:7px;
+    text-transform:uppercase; letter-spacing:0.06em; font-weight:600;
+  }
+  .field input[type="text"], .field input[type="number"]{
+    width:100%; background:var(--surface); border:1px solid var(--border);
+    color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:16px;
+    padding:13px 14px; border-radius:8px; outline:none;
+  }
+  .field input:focus{ border-color:var(--amber); }
+  .field-hint{ font-size:12px; color:var(--locked); margin-top:6px; }
+
+  .primary-btn{
+    width:100%; background:var(--amber); color:#1A1406; border:none;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:15px;
+    padding:15px; border-radius:9px; cursor:pointer; margin-top:8px;
+    letter-spacing:0.01em;
+  }
+  .primary-btn:disabled{ background:var(--border); color:var(--locked); cursor:not-allowed; }
+  .primary-btn:active:not(:disabled){ transform:scale(0.99); }
+
+  .secondary-btn{
+    width:100%; background:var(--surface-2); color:var(--text); border:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14px;
+    padding:13px; border-radius:9px; cursor:pointer; margin-top:10px;
+  }
+
+  .error-msg{ color:var(--red); font-size:13px; margin-top:10px; }
+
+  /* ---------- Chain view ---------- */
+  .player-bar{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:13px 15px; margin-bottom:22px;
+  }
+  .player-bar .name{ font-size:14px; font-weight:600; }
+  .player-bar .jn{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted);
+  }
+
+  .chain{ position:relative; }
+
+  .stage-card{ position:relative; padding-left:34px; padding-bottom:26px; }
+  .stage-card:last-child{ padding-bottom:0; }
+
+  .connector{
+    position:absolute; left:10px; top:26px; bottom:-4px; width:2px;
+    background:var(--border);
+  }
+  .stage-card:last-child .connector{ display:none; }
+  .stage-card.state-done .connector{ background:var(--green); }
+
+  .node{
+    position:absolute; left:0; top:2px; width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;
+    border:2px solid var(--border); background:var(--bg); color:var(--locked);
+  }
+  .stage-card.state-active .node{ border-color:var(--amber); color:var(--amber); }
+  .stage-card.state-done .node{ border-color:var(--green); background:var(--green); color:#0E1712; }
+
+  .card-body{
+    background:var(--surface); border:1px solid var(--border); border-radius:11px;
+    padding:16px;
+  }
+  .stage-card.state-active .card-body{ border-color:var(--amber-dim); box-shadow:0 0 0 1px var(--amber-dim); }
+  .stage-card.state-done .card-body{ padding:13px 16px; }
+
+  .stage-title{
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14px;
+    margin-bottom:2px;
+  }
+  .stage-status{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:14px; }
+  .stage-card.state-done .stage-status{ margin-bottom:0; }
+
+  .base-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px; color:var(--muted); margin-bottom:14px;
+  }
+  .base-row .val{ font-family:'IBM Plex Mono',monospace; color:var(--text); font-size:14px; }
+
+  .timer-block{ text-align:center; padding:10px 0 4px; }
+  .timer-digits{
+    font-family:'IBM Plex Mono',monospace; font-size:38px; font-weight:600;
+    letter-spacing:0.02em; color:var(--amber);
+  }
+  .timer-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:6px; }
+  .skip-link{
+    display:block; text-align:center; margin-top:14px; font-size:12px; color:var(--locked);
+    text-decoration:underline; text-underline-offset:3px; background:none; border:none; cursor:pointer;
+    width:100%; padding:6px;
+  }
+
+  .input-row{ display:flex; gap:8px; margin-top:4px; }
+  .input-row input{
+    flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:16px; padding:12px 13px; border-radius:8px; outline:none;
+  }
+  .input-row input:focus{ border-color:var(--amber); }
+  .input-row button{
+    background:var(--amber); color:#1A1406; border:none; font-family:'IBM Plex Mono',monospace;
+    font-weight:700; font-size:13px; padding:0 16px; border-radius:8px; cursor:pointer;
+  }
+  .input-row button:disabled{ background:var(--border); color:var(--locked); }
+
+  .review-number{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:9px;
+    padding:14px; text-align:center; margin-bottom:14px;
+  }
+  .review-number .pct-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+  .review-number .pct-val{ font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700; color:var(--text); }
+
+  .decision-row{ display:flex; gap:10px; }
+  .decision-row button{
+    flex:1; padding:13px; border-radius:8px; border:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px; cursor:pointer;
+    background:var(--surface-2); color:var(--text);
+  }
+  .decision-row .correct-btn{ border-color:var(--green); color:var(--green); }
+  .decision-row .correct-btn:active{ background:var(--green-dim); }
+  .decision-row .wrong-btn{ border-color:var(--red); color:var(--red); }
+  .decision-row .wrong-btn:active{ background:var(--red-dim); }
+
+  .done-summary{ display:flex; justify-content:space-between; align-items:center; }
+  .done-summary .chip{ font-size:11px; color:var(--green); font-family:'IBM Plex Mono',monospace; }
+  .done-summary .nums{ font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+
+  .next-step-panel{
+    background:var(--surface); border:1px dashed var(--border); border-radius:11px;
+    padding:16px; margin-top:2px;
+  }
+  .next-step-panel .lbl{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+
+  .final-banner{
+    background:var(--green-dim); border:1px solid var(--green); border-radius:11px;
+    padding:20px; text-align:center; margin-top:6px;
+  }
+  .final-banner .t1{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:16px; color:var(--green); margin-bottom:4px; }
+  .final-banner .t2{ font-size:13px; color:var(--muted); }
+
+  ::selection{ background:var(--amber); color:#1A1406; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="mark">Pankaj<span> </span>Trade</div>
+    <button class="reset-btn" id="resetBtn" style="display:none;">reset</button>
+  </header>
+
+  <div id="setupScreen" class="setup">
+    <h1>Start a new chain</h1>
+    <p class="sub">Enter the player and a joining number. GST waits 45 minutes for its number; every step after that is instant — you'll name each one as you go.</p>
+
+    <div class="field">
+      <label for="playerName">Player name</label>
+      <input type="text" id="playerName" placeholder="e.g. R. Sharma">
+    </div>
+
+    <div class="field">
+      <label for="joinNum">Joining number</label>
+      <input type="text" inputmode="numeric" id="joinNum" placeholder="e.g. 12345">
+      <div class="field-hint">Any number — 5-digit format works fine.</div>
+    </div>
+
+    <div class="error-msg" id="setupError" style="display:none;"></div>
+    <button class="primary-btn" id="startBtn">Start chain</button>
+  </div>
+
+  <div id="chainScreen" style="display:none;">
+    <div class="player-bar">
+      <div class="name" id="pbName"></div>
+      <div class="jn" id="pbNum"></div>
+    </div>
+    <div class="chain" id="chainList"></div>
+  </div>
+</div>
+
+<script>
+const WAIT_MS = 45 * 60 * 1000; // 45 minutes, first step only
+const STORE_KEY = 'pankaj-trade-state-v1';
+
+let state = null;
+let tickHandle = null;
+
+function fmt(n){
+  const num = Number(n);
+  if (Number.isNaN(num)) return n;
+  return (Math.round(num * 100) / 100).toString();
+}
+
+function pctOf(n){
+  return fmt(Number(n) * 0.18);
+}
+
+async function saveState(){
+  try{ await window.storage.set(STORE_KEY, JSON.stringify(state), false); }
+  catch(e){ console.error('save failed', e); }
+}
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORE_KEY, false);
+    if (res && res.value){ return JSON.parse(res.value); }
+  }catch(e){}
+  return null;
+}
+async function clearState(){
+  try{ await window.storage.delete(STORE_KEY, false); }catch(e){}
+}
+
+function startChain(){
+  const nameEl = document.getElementById('playerName');
+  const numEl = document.getElementById('joinNum');
+  const errEl = document.getElementById('setupError');
+  const name = nameEl.value.trim();
+  const num = numEl.value.trim();
+
+  if (!name || !num || Number.isNaN(Number(num))){
+    errEl.textContent = 'Enter a player name and a valid joining number.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const stages = [
+    { label:'GST', hasTimer:true, baseNumber:num, phase:'timer', timerEnd: Date.now()+WAIT_MS, resultNumber:null, percentValue:null, decision:null },
+    { label:'File Charge', hasTimer:false, baseNumber:null, phase:'locked', timerEnd:null, resultNumber:null, percentValue:null, decision:null }
+  ];
+
+  state = {
+    player: { name, joinNum: num },
+    stages,
+    currentStageIndex: 0,
+    awaitingNextStepName: false,
+    finished: false
+  };
+
+  saveState();
+  showChainScreen();
+}
+
+function showChainScreen(){
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('chainScreen').style.display = 'block';
+  document.getElementById('resetBtn').style.display = 'inline-block';
+  document.getElementById('pbName').textContent = state.player.name;
+  document.getElementById('pbNum').textContent = 'Joining: ' + state.player.joinNum;
+  renderChain();
+  if (tickHandle) clearInterval(tickHandle);
+  tickHandle = setInterval(tick, 1000);
+}
+
+function tick(){
+  if (!state || state.finished) return;
+  const st = state.stages[state.currentStageIndex];
+  if (st && st.phase === 'timer'){
+    if (Date.now() >= st.timerEnd){
+      st.phase = 'input';
+      saveState();
+    }
+    renderChain();
+  }
+}
+
+function timeLeftStr(endTs){
+  const ms = Math.max(0, endTs - Date.now());
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60).toString().padStart(2,'0');
+  const s = (totalSec % 60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+function renderChain(){
+  const list = document.getElementById('chainList');
+  list.innerHTML = '';
+
+  // Only stages that are not locked are ever shown.
+  const visible = state.stages
+    .map((st, idx) => ({ st, idx }))
+    .filter(x => x.st.phase !== 'locked');
+
+  visible.forEach(({st, idx}, pos) => {
+    const card = document.createElement('div');
+    let stateClass = 'state-active';
+    if (st.phase === 'done') stateClass = 'state-done';
+    card.className = `stage-card ${stateClass}`;
+
+    let inner = `<div class="connector"></div><div class="node">${st.phase === 'done' ? '✓' : (pos+1)}</div><div class="card-body">`;
+    inner += `<div class="stage-title">${st.label}</div>`;
+
+    if (st.phase === 'timer'){
+      inner += `<div class="stage-status">Waiting for result</div>`;
+      inner += `<div class="base-row"><span>Joining number</span><span class="val">${st.baseNumber}</span></div>`;
+      inner += `<div class="timer-block"><div class="timer-digits" id="timer-${idx}">${timeLeftStr(st.timerEnd)}</div><div class="timer-label">until number is ready</div></div>`;
+      inner += `<button class="skip-link" data-action="skip" data-idx="${idx}">skip wait (testing)</button>`;
+    } else if (st.phase === 'input'){
+      inner += `<div class="stage-status">Ready — enter the number</div>`;
+      inner += `<div class="base-row"><span>Joining number</span><span class="val">${st.baseNumber}</span></div>`;
+      inner += `<div class="input-row"><input type="text" inputmode="numeric" placeholder="Number received" id="resultInput-${idx}"><button data-action="submit-result" data-idx="${idx}">Mark complete</button></div>`;
+    } else if (st.phase === 'review'){
+      inner += `<div class="stage-status">Check the 18% figure</div>`;
+      inner += `<div class="base-row"><span>Number received</span><span class="val">${st.resultNumber}</span></div>`;
+      inner += `<div class="review-number"><div class="pct-label">18% of ${st.resultNumber}</div><div class="pct-val">${st.percentValue}</div></div>`;
+      inner += `<div class="decision-row"><button class="wrong-btn" data-action="wrong" data-idx="${idx}">Wrong</button><button class="correct-btn" data-action="correct" data-idx="${idx}">Correct</button></div>`;
+    } else if (st.phase === 'done'){
+      inner += `<div class="done-summary"><span class="chip">complete</span><span class="nums">${st.resultNumber} → ${st.percentValue}</span></div>`;
+    }
+
+    inner += `</div>`;
+    card.innerHTML = inner;
+    list.appendChild(card);
+  });
+
+  if (state.awaitingNextStepName && !state.finished){
+    const panel = document.createElement('div');
+    panel.className = 'next-step-panel';
+    panel.innerHTML = `
+      <div class="lbl">Name the next step</div>
+      <div class="input-row" style="margin-bottom:10px;">
+        <input type="text" placeholder="e.g. Bonus, Clearance..." id="nextStepName">
+      </div>
+      <button class="primary-btn" id="addStepBtn" style="margin-top:0;">Add step</button>
+      <button class="secondary-btn" id="finishBtn">Finish chain here</button>
+    `;
+    list.appendChild(panel);
+  }
+
+  if (state.finished){
+    const banner = document.createElement('div');
+    banner.className = 'final-banner';
+    banner.innerHTML = `<div class="t1">Chain complete</div><div class="t2">${visible.filter(v=>v.st.phase==='done').length} step(s) checked out.</div>`;
+    list.appendChild(banner);
+  }
+
+  attachHandlers();
+}
+
+function attachHandlers(){
+  document.querySelectorAll('[data-action="skip"]').forEach(btn => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.idx);
+      state.stages[idx].timerEnd = Date.now();
+      saveState();
+      renderChain();
+    };
+  });
+
+  document.querySelectorAll('[data-action="submit-result"]').forEach(btn => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.idx);
+      const input = document.getElementById(`resultInput-${idx}`);
+      const val = input.value.trim();
+      if (!val || Number.isNaN(Number(val))) { input.focus(); return; }
+      const st = state.stages[idx];
+      st.resultNumber = val;
+      st.percentValue = pctOf(val);
+      st.phase = 'review';
+      saveState();
+      renderChain();
+    };
+  });
+
+  document.querySelectorAll('[data-action="correct"]').forEach(btn => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.idx);
+      const st = state.stages[idx];
+      st.decision = 'correct';
+      st.phase = 'done';
+
+      const nextIdx = idx + 1;
+      if (nextIdx < state.stages.length){
+        const nextSt = state.stages[nextIdx];
+        nextSt.baseNumber = st.percentValue;
+        nextSt.phase = nextSt.hasTimer ? 'timer' : 'input';
+        if (nextSt.hasTimer) nextSt.timerEnd = Date.now() + WAIT_MS;
+        state.currentStageIndex = nextIdx;
+      } else {
+        state.pendingBaseNumber = st.percentValue;
+        state.awaitingNextStepName = true;
+      }
+      saveState();
+      renderChain();
+    };
+  });
+
+  document.querySelectorAll('[data-action="wrong"]').forEach(btn => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.idx);
+      const st = state.stages[idx];
+      st.decision = 'wrong';
+      st.baseNumber = st.percentValue;
+      st.resultNumber = null;
+      st.percentValue = null;
+      if (st.hasTimer){
+        st.phase = 'timer';
+        st.timerEnd = Date.now() + WAIT_MS;
+      } else {
+        st.phase = 'input';
+      }
+      saveState();
+      renderChain();
+    };
+  });
+
+  const addBtn = document.getElementById('addStepBtn');
+  if (addBtn){
+    addBtn.onclick = () => {
+      const nameInput = document.getElementById('nextStepName');
+      const label = nameInput.value.trim();
+      if (!label){ nameInput.focus(); return; }
+      state.stages.push({
+        label, hasTimer:false, baseNumber: state.pendingBaseNumber,
+        phase:'input', timerEnd:null, resultNumber:null, percentValue:null, decision:null
+      });
+      state.currentStageIndex = state.stages.length - 1;
+      state.awaitingNextStepName = false;
+      saveState();
+      renderChain();
+    };
+  }
+
+  const finishBtn = document.getElementById('finishBtn');
+  if (finishBtn){
+    finishBtn.onclick = () => {
+      state.finished = true;
+      state.awaitingNextStepName = false;
+      saveState();
+      renderChain();
+    };
+  }
+}
+
+setInterval(() => {
+  if (!state || state.finished) return;
+  const st = state.stages[state.currentStageIndex];
+  if (st && st.phase === 'timer'){
+    const el = document.getElementById(`timer-${state.currentStageIndex}`);
+    if (el) el.textContent = timeLeftStr(st.timerEnd);
+  }
+}, 1000);
+
+document.getElementById('resetBtn').onclick = async () => {
+  if (!confirm('Reset and start a new chain? This clears the current progress.')) return;
+  await clearState();
+  state = null;
+  if (tickHandle) clearInterval(tickHandle);
+  document.getElementById('chainScreen').style.display = 'none';
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'block';
+  document.getElementById('playerName').value = '';
+  document.getElementById('joinNum').value = '';
+};
+
+document.getElementById('startBtn').onclick = startChain;
+
+(async function init(){
+  const saved = await loadState();
+  if (saved && saved.player){
+    state = saved;
+    showChainScreen();
+  }
+})();
+</script>
+</body>
+</html>
