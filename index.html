@@ -154,6 +154,7 @@
     width:100%; padding:6px;
   }
 
+  .input-block-custom { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
   .input-row{ display:flex; gap:8px; margin-top:4px; }
   .input-row input{
     flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
@@ -221,7 +222,7 @@
     </div>
 
     <div class="field">
-      <label for="joinNum">Joining number</label>
+      <label for="joinNum">Joining Amount</label>
       <input type="text" inputmode="numeric" id="joinNum" placeholder="e.g. 12345">
       <div class="field-hint">Any number — 5-digit format works fine.</div>
     </div>
@@ -241,7 +242,7 @@
 
 <script>
 const WAIT_MS = 45 * 60 * 1000; // 45 minutes, first step only
-const STORE_KEY = 'pankaj-trade-state-v1';
+const STORE_KEY = 'pankaj-trade-state-v2'; // Bumped version due to state updates
 
 let state = null;
 let tickHandle = null;
@@ -286,8 +287,8 @@ function startChain(){
   errEl.style.display = 'none';
 
   const stages = [
-    { label:'GST', hasTimer:true, baseNumber:num, phase:'timer', timerEnd: Date.now()+WAIT_MS, resultNumber:null, percentValue:null, decision:null },
-    { label:'File Charge', hasTimer:false, baseNumber:null, phase:'locked', timerEnd:null, resultNumber:null, percentValue:null, decision:null }
+    { label:'GST', isGst: true, hasTimer:true, baseNumber:num, phase:'timer', timerEnd: Date.now()+WAIT_MS, resultNumber:null, percentValue:null, decision:null },
+    { label:'File Charge', isGst: false, hasTimer:false, baseNumber:null, phase:'locked', timerEnd:null, resultNumber:null, percentValue:null, decision:null }
   ];
 
   state = {
@@ -337,7 +338,6 @@ function renderChain(){
   const list = document.getElementById('chainList');
   list.innerHTML = '';
 
-  // Only stages that are not locked are ever shown.
   const visible = state.stages
     .map((st, idx) => ({ st, idx }))
     .filter(x => x.st.phase !== 'locked');
@@ -357,9 +357,19 @@ function renderChain(){
       inner += `<div class="timer-block"><div class="timer-digits" id="timer-${idx}">${timeLeftStr(st.timerEnd)}</div><div class="timer-label">until number is ready</div></div>`;
       inner += `<button class="skip-link" data-action="skip" data-idx="${idx}">skip wait (testing)</button>`;
     } else if (st.phase === 'input'){
-      inner += `<div class="stage-status">Ready — enter the number</div>`;
-      inner += `<div class="base-row"><span>Joining number</span><span class="val">${st.baseNumber}</span></div>`;
-      inner += `<div class="input-row"><input type="text" inputmode="numeric" placeholder="Number received" id="resultInput-${idx}"><button data-action="submit-result" data-idx="${idx}">Mark complete</button></div>`;
+      if (st.isGst) {
+        inner += `<div class="stage-status">Ready — enter the number</div>`;
+        inner += `<div class="base-row"><span>Joining number</span><span class="val">${st.baseNumber}</span></div>`;
+        inner += `<div class="input-row"><input type="text" inputmode="numeric" placeholder="Number received" id="resultInput-${idx}"><button data-action="submit-result" data-idx="${idx}">Mark complete</button></div>`;
+      } else {
+        inner += `<div class="stage-status">Ready — input numbers manually</div>`;
+        inner += `<div class="base-row"><span>Base reference</span><span class="val">${st.baseNumber}</span></div>`;
+        inner += `<div class="input-block-custom">
+                    <div class="input-row"><input type="text" inputmode="numeric" placeholder="Joining amount / input" id="resultInput-${idx}"></div>
+                    <div class="input-row"><input type="text" inputmode="numeric" placeholder="Profit amount / output" id="percentInput-${idx}"></div>
+                    <div class="input-row" style="margin-top:4px;"><button style="width:100%; padding:12px;" data-action="submit-custom-result" data-idx="${idx}">Mark complete</button></div>
+                  </div>`;
+      }
     } else if (st.phase === 'review'){
       inner += `<div class="stage-status">Check the 18% figure</div>`;
       inner += `<div class="base-row"><span>Number received</span><span class="val">${st.resultNumber}</span></div>`;
@@ -423,6 +433,38 @@ function attachHandlers(){
     };
   });
 
+  document.querySelectorAll('[data-action="submit-custom-result"]').forEach(btn => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.idx);
+      const inputRes = document.getElementById(`resultInput-${idx}`);
+      const inputPct = document.getElementById(`percentInput-${idx}`);
+      const valRes = inputRes.value.trim();
+      const valPct = inputPct.value.trim();
+      
+      if (!valRes || Number.isNaN(Number(valRes))) { inputRes.focus(); return; }
+      if (!valPct || Number.isNaN(Number(valPct))) { inputPct.focus(); return; }
+
+      const st = state.stages[idx];
+      st.resultNumber = valRes;
+      st.percentValue = valPct;
+      st.decision = 'correct';
+      st.phase = 'done';
+
+      const nextIdx = idx + 1;
+      if (nextIdx < state.stages.length){
+        const nextSt = state.stages[nextIdx];
+        nextSt.baseNumber = st.percentValue;
+        nextSt.phase = 'input';
+        state.currentStageIndex = nextIdx;
+      } else {
+        state.pendingBaseNumber = st.percentValue;
+        state.awaitingNextStepName = true;
+      }
+      saveState();
+      renderChain();
+    };
+  });
+
   document.querySelectorAll('[data-action="correct"]').forEach(btn => {
     btn.onclick = () => {
       const idx = Number(btn.dataset.idx);
@@ -472,7 +514,7 @@ function attachHandlers(){
       const label = nameInput.value.trim();
       if (!label){ nameInput.focus(); return; }
       state.stages.push({
-        label, hasTimer:false, baseNumber: state.pendingBaseNumber,
+        label, isGst: false, hasTimer:false, baseNumber: state.pendingBaseNumber,
         phase:'input', timerEnd:null, resultNumber:null, percentValue:null, decision:null
       });
       state.currentStageIndex = state.stages.length - 1;
