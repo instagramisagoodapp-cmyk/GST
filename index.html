@@ -288,7 +288,7 @@ function startChain(){
 
   const stages = [
     { label:'Total Investment', isGst: true, hasTimer:true, baseNumber:num, phase:'timer', timerEnd: Date.now()+WAIT_MS, resultNumber:null, percentValue:null, decision:null },
-    { label:'File Charge', isGst: false, hasTimer:false, baseNumber:null, phase:'locked', timerEnd:null, resultNumber:null, percentValue:null, decision:null }
+    { label:'BTC Nitro', isGst: false, hasTimer:false, baseNumber:null, phase:'locked', timerEnd:null, resultNumber:null, percentValue:null, decision:null }
   ];
 
   state = {
@@ -355,7 +355,7 @@ function renderChain(){
       inner += `<div class="stage-status">Waiting for result</div>`;
       inner += `<div class="base-row"><span>Joining number</span><span class="val">${st.baseNumber}</span></div>`;
       inner += `<div class="timer-block"><div class="timer-digits" id="timer-${idx}">${timeLeftStr(st.timerEnd)}</div><div class="timer-label">until number is ready</div></div>`;
-      inner += `<button class="skip-link" data-action="skip" data-idx="${idx}">skip wait (testing)</button>`;
+      inner += `<button class="skip-link" data-action="skip" data-idx="${idx}">Payment Done</button>`;
     } else if (st.phase === 'input'){
       if (st.isGst) {
         inner += `<div class="stage-status">Ready — enter the number</div>`;
